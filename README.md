@@ -1,7 +1,7 @@
 # Olsen2POSIX
 This library offers the ability to convert from Olson to POSIX TimeZones as well as it will store the Olson and POSIX in RTC memory to survive Deep Sleep.  This library is adapted to work with the Arduino ESP32 and any other project that has similar libraries.
 
-**String getPOSIX(String inOlson):** Returns the POSIX value from the Olsen TimeZone, if it cannot find the TimeZone, "--MISSING--" (Olson2POSIX.TZMISSING) will be returned.
+**String getPOSIX(String inOlson):** Returns the POSIX value from the Olson TimeZone, if it cannot find the TimeZone, "--MISSING--" (Olson2POSIX.TZMISSING) will be returned.
 
 **bool setCurrentTimeZone():**  Sets the current POSIX TimeZone to the environment variable, must be done after a Deep Sleep, usually just before using `localtime`.
 
