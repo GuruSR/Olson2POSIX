@@ -70,7 +70,7 @@ bool Olson2POSIX::setCurrentTimeZone(){
     return false;
 }
 
-// setOlsonTimeZone sets the timezone to the Olsen given.
+// setOlsonTimeZone sets the timezone to the Olson given.
 bool Olson2POSIX::setOlsonTimeZone(String inOlson){
     String P = getPOSIX(inOlson);
     if (!Inited) init();
