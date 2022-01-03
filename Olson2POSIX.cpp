@@ -74,7 +74,7 @@ bool Olson2POSIX::setCurrentTimeZone(){
 bool Olson2POSIX::setOlsonTimeZone(String inOlson){
     String P = getPOSIX(inOlson);
     if (!Inited) init();
-    if (P.length() > 0){
+    if (P.length() > 0 && P != TZMISSING){
         strcpy(POSIX,P.c_str());
         OlsonFromWeb = inOlson;
         setenv("TZ",POSIX,1);
