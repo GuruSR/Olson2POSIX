@@ -11,7 +11,7 @@ This library offers the ability to convert from Olson to POSIX TimeZones as well
 
 **String getCurrentOlson():**  Returns the current Olson TimeZone in a String.
 
-**bool setCurrentPOSIX(String NewPOSIX):**  Sets the new POSIX as the current POSIX TimeZone.
+**bool setCurrentPOSIX(String NewPOSIX):**  Sets the new POSIX as the current POSIX TimeZone and environment variable.
 
 **bool beginOlsonFromWeb():**  Starts the operation to ask for a TimeZone based on IP address (WiFi needs to be on and connected).  This is not ASYNC currently.
 
