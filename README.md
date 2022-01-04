@@ -55,9 +55,9 @@ To get the current TimeZone, you would:
   if (OP.beginOlsonFromWeb()){
     int s = 0;
     bool b = false;
-    while (!b && s < 5){
+    while (!b && s < 100){
       s++; 
-      delay(1000);
+      delay(50);
       b = OP.gotOlsonFromWeb();
   }
   if (b) OP.setOlsonTimeZone(OP.getCurrentOlson());
