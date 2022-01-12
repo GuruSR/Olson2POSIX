@@ -16,6 +16,7 @@ class Olson2POSIX{
         String getCurrentPOSIX();
         String getCurrentOlson();
         bool setCurrentPOSIX(String NewPOSIX);
+        void setTZInternal();
         bool beginOlsonFromWeb();
         void endOlsonFromWeb();
         bool gotOlsonFromWeb();

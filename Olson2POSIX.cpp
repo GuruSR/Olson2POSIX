@@ -2,6 +2,7 @@
 
 /* Olson2POSIX by GuruSR (https://www.github.com/GuruSR/Olson2POSIX)
  * Version 1.0, January 2, 2022
+ * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -31,7 +32,8 @@
  * SOFTWARE.
 */
 
-static const char TZURL[] PROGMEM = "http://ip-api.com/json";
+static const char TZURL[] PROGMEM = "http://ip-api.com/json/?fields=timezone";
+static const char P_LOC[] PROGMEM = "LOC";
 RTC_DATA_ATTR char POSIX[64];
 RTC_DATA_ATTR String OlsonFromWeb;
 RTC_DATA_ATTR bool Inited;
@@ -63,7 +65,7 @@ String Olson2POSIX::getPOSIX(String inOlson){
 bool Olson2POSIX::setCurrentTimeZone(){
     if (!Inited) init();
     if (POSIX[0] != 0){
-        setenv("TZ",POSIX,1);
+        setTZInternal();
         tzset();
         return true;
     }
@@ -77,7 +79,7 @@ bool Olson2POSIX::setOlsonTimeZone(String inOlson){
     if (P.length() > 0 && P != TZMISSING){
         strcpy(POSIX,P.c_str());
         OlsonFromWeb = inOlson;
-        setenv("TZ",POSIX,1);
+        setTZInternal();
         tzset();
         return true;
     }
@@ -98,11 +100,27 @@ bool Olson2POSIX::setCurrentPOSIX(String NewPOSIX){
     if (!Inited) init();
     if (NewPOSIX.length() > 0){
         strcpy(POSIX,NewPOSIX.c_str());
-        setenv("TZ",POSIX,1);
+        setTZInternal();
         tzset();
         return true;
     }
     return false;
+}
+
+// Sets the TimeZone with fix for static timezones.
+void Olson2POSIX::setTZInternal(){
+if (POSIX[0] == 0x3C){     // check if first char is '<'
+    String _tz(POSIX);
+    String _tzfix((char *)0);
+    _tzfix.reserve(sizeof(POSIX)) ;
+    _tzfix += FPSTR(P_LOC);
+    if (_tz.indexOf('<',1) > 0){  // there might be two <> quotes
+        _tzfix += _tz.substring(_tz.indexOf('>')+1, _tz.indexOf('<',1));
+        _tzfix += FPSTR(P_LOC);
+    }
+    _tzfix += _tz.substring(_tz.lastIndexOf('>')+1, _tz.length());
+    setenv("TZ", _tzfix.c_str(), 1);
+    } else setenv("TZ", POSIX, 1);
 }
 
 // Asks for the response, not currently Async...
