@@ -1,7 +1,7 @@
 #include "Olson2POSIX.h"
 
 /* Olson2POSIX by GuruSR (https://www.github.com/GuruSR/Olson2POSIX)
- * Version 1.0, January 2, 2022
+ * Version 1.0, January  2, 2022
  * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
@@ -126,7 +126,7 @@ if (POSIX[0] == 0x3C){     // check if first char is '<'
 // Asks for the response, not currently Async...
 bool Olson2POSIX::beginOlsonFromWeb(){
     if (!Inited) init();
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (oWiFi.status() != WL_CONNECTED) return false;
     oHTTP.begin(oWiFiC, TZURL);  // Call it and leave.
     Obegan = true;
     return Obegan;
@@ -142,7 +142,7 @@ void Olson2POSIX::endOlsonFromWeb(){
 // Has the response happened?
 bool Olson2POSIX::gotOlsonFromWeb(){
     if (!Inited) init();
-    if (WiFi.status() != WL_CONNECTED) return false;
+    if (oWiFi.status() != WL_CONNECTED) return false;
     if (oHTTP.GET() == HTTP_CODE_OK) {
         String payload = oHTTP.getString();
         JSONVar root = JSON.parse(payload);
