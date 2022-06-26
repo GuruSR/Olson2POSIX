@@ -126,7 +126,7 @@ if (POSIX[0] == 0x3C){     // check if first char is '<'
 // Asks for the response, not currently Async...
 bool Olson2POSIX::beginOlsonFromWeb(){
     if (!Inited) init();
-    if (oWiFi.status() != WL_CONNECTED) return false;
+    if (oWiFiC.status() != WL_CONNECTED) return false;
     oHTTP.begin(oWiFiC, TZURL);  // Call it and leave.
     Obegan = true;
     return Obegan;
@@ -142,7 +142,7 @@ void Olson2POSIX::endOlsonFromWeb(){
 // Has the response happened?
 bool Olson2POSIX::gotOlsonFromWeb(){
     if (!Inited) init();
-    if (oWiFi.status() != WL_CONNECTED) return false;
+    if (oWiFiC.status() != WL_CONNECTED) return false;
     if (oHTTP.GET() == HTTP_CODE_OK) {
         String payload = oHTTP.getString();
         JSONVar root = JSON.parse(payload);
