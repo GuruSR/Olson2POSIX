@@ -3,6 +3,7 @@
 /* Olson2POSIX by GuruSR (https://www.github.com/GuruSR/Olson2POSIX)
  * Version 1.0, January  2, 2022
  * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
+ * Version 1.2, March   28, 2023 - Converted to a threaded system for main thread performance.
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -37,6 +38,9 @@ static const char P_LOC[] PROGMEM = "LOC";
 RTC_DATA_ATTR char POSIX[64];
 RTC_DATA_ATTR String OlsonFromWeb;
 RTC_DATA_ATTR bool Inited;
+RTC_DATA_ATTR TaskHandle_t OlsHandle = NULL;
+RTC_DATA_ATTR BaseType_t OlsRet;
+RTC_DATA_ATTR bool ODone;
 bool Obegan;
 WiFiClient oWiFiC;
 HTTPClient oHTTP;              // Tz
@@ -127,32 +131,50 @@ if (POSIX[0] == 0x3C){     // check if first char is '<'
 bool Olson2POSIX::beginOlsonFromWeb(){
     if (!Inited) init();
     if (WiFi.status() != WL_CONNECTED) return false;
-    oHTTP.begin(oWiFiC, TZURL);  // Call it and leave.
-    Obegan = true;
+    ODone = false;
+    if (OlsHandle == NULL) {
+      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",20480,NULL,(configMAX_PRIORITIES, - 2),&OlsHandle);
+      Obegan = (OlsHandle != NULL);
+    }
     return Obegan;
 }
 
-void Olson2POSIX::endOlsonFromWeb(){
-    if (Obegan){
-        oHTTP.end();
-        Obegan = false;
-    }
-}
+void Olson2POSIX::endOlsonFromWeb(){ if (Obegan){ ODone = false; Obegan = false; } }
 
 // Has the response happened?
 bool Olson2POSIX::gotOlsonFromWeb(){
     if (!Inited) init();
-    if (WiFi.status() != WL_CONNECTED) return false;
-    if (oHTTP.GET() == HTTP_CODE_OK) {
-        String payload = oHTTP.getString();
-        JSONVar root = JSON.parse(payload);
-        String S = JSON.stringify(root["timezone"]);
-        S.replace('"',' ');
-        S.trim();
-        OlsonFromWeb = S;
-        return true;
+	return ODone;
+}
+
+// Does the function to retrieve the Olson from the web (on a task).
+void Olson2POSIX::OlsonGet(void * parameter){
+int i = 0;
+String S, payload;
+bool Good = (WiFi.status() == WL_CONNECTED);
+bool Sent = false;
+unsigned long Stay = millis() + 1000;
+vTaskDelay(5/portTICK_PERIOD_MS);
+    while (Good && millis() < Stay){
+        if (Obegan){
+            if (!Sent) { Sent = true; oHTTP.setConnectTimeout(3000); Stay = millis() + 3500; oHTTP.begin(oWiFiC, TZURL); } // Call it and leave.
+            i = oHTTP.GET();
+            if (i == HTTP_CODE_OK) {
+                payload = oHTTP.getString();
+                JSONVar root = JSON.parse(payload);
+                S = JSON.stringify(root["timezone"]);
+                S.replace('"',' ');
+                S.trim();
+                OlsonFromWeb = S;
+                Good = false;
+            }else if (i > 0) Good = false;	// Hit a web error.
+        }
+        if (Good) vTaskDelay(100/portTICK_PERIOD_MS);    // 100ms pauses.
     }
-    return false;
+    oHTTP.end();
+    ODone = true;
+    OlsHandle = NULL;
+    vTaskDelete(OlsHandle);
 }
 
 void Olson2POSIX::init(){
