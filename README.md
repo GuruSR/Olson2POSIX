@@ -19,6 +19,8 @@ This library offers the ability to convert from Olson to POSIX TimeZones as well
 
 **bool gotOlsonFromWeb():**  Returns `true` if it recieved an Olson TimeZone.
 
+**int getOlsonWebError():**  Returns a value for HTTP Response based on an error value (normal acceptances will not be here).
+
 **init():**  Do this from the `switch (wakeup_reason)` in `default:` or not, the above functions do it if you don't.
 
 The current Olson and POSIX TimeZones will remain after a Deep Sleep, but not a reboot, so be sure to record them if you're wanting them to stay.
