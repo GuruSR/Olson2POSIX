@@ -136,7 +136,7 @@ bool Olson2POSIX::beginOlsonFromWeb(){
     ODone = false;
     if (OlsHandle == NULL) {
       WebError = 0;
-      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",20480,NULL,(configMAX_PRIORITIES, - 2),&OlsHandle);
+      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",20480,NULL,(configMAX_PRIORITIES - 2),&OlsHandle);
       Obegan = (OlsHandle != NULL);
     }
     return Obegan;
