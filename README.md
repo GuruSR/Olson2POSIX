@@ -13,7 +13,7 @@ This library offers the ability to convert from Olson to POSIX TimeZones as well
 
 **bool setCurrentPOSIX(String NewPOSIX):**  Sets the new POSIX as the current POSIX TimeZone and environment variable.
 
-**bool beginOlsonFromWeb():**  Starts the operation to ask for a TimeZone based on IP address (WiFi needs to be on and connected).  This is not ASYNC currently.
+**bool beginOlsonFromWeb(WiFiClient &client):**  Starts the operation to ask for a TimeZone based on IP address (WiFi needs to be on and connected).  As of 1.4, requires WiFiClient object.
 
 **endOlsonFromWeb():**  This tells the operation to end, do so once the function `gotOlsonFromWeb()` returns `true`.
 
