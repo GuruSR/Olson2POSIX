@@ -6,6 +6,7 @@
  * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
  * Version 1.2, March   28, 2023 - Converted to a threaded system for main thread performance.
  * Version 1.3, January 12, 2024 - Added WebError and methods to get the last HTTP error.
+ * Version 1.4, July    17, 2024 - Migrated away from getString to improve task performance.
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -50,7 +51,7 @@ class Olson2POSIX{
         String getCurrentPOSIX();
         String getCurrentOlson();
         bool setCurrentPOSIX(String NewPOSIX);
-        bool beginOlsonFromWeb();
+        bool beginOlsonFromWeb(WiFiClient &client);
         void endOlsonFromWeb();
         bool gotOlsonFromWeb();
         int getOlsonWebError();
@@ -58,6 +59,6 @@ class Olson2POSIX{
         const String TZMISSING = "--MISSING--";
     private:
         void setTZInternal();
-		static void OlsonGet(void * parameter);
+        static void OlsonGet(void * parameter);
 };
 #endif

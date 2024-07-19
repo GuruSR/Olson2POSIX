@@ -5,6 +5,7 @@
  * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
  * Version 1.2, March   28, 2023 - Converted to a threaded system for main thread performance.
  * Version 1.3, January 12, 2024 - Added WebError and methods to get the last HTTP error.
+ * Version 1.4, July    17, 2024 - Migrated away from getString to improve task performance.
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -44,7 +45,7 @@ RTC_DATA_ATTR BaseType_t OlsRet;
 RTC_DATA_ATTR bool ODone;
 bool Obegan;
 volatile int WebError;
-WiFiClient oWiFiC;
+WiFiClient oWiFiC = NULL;
 HTTPClient oHTTP;              // Tz
 
 // Data from:  https://github.com/pgurenko/tzinfo
@@ -130,13 +131,14 @@ if (POSIX[0] == 0x3C){     // check if first char is '<'
 }
 
 // Asks for the response, not currently Async...
-bool Olson2POSIX::beginOlsonFromWeb(){
+bool Olson2POSIX::beginOlsonFromWeb(WiFiClient &client){
+    oWiFiC = client;
     if (!Inited) init();
     if (WiFi.status() != WL_CONNECTED) return false;
     ODone = false;
     if (OlsHandle == NULL) {
       WebError = 0;
-      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",20480,NULL,(configMAX_PRIORITIES, - 2),&OlsHandle);
+      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",3072,NULL,(configMAX_PRIORITIES - 2),&OlsHandle);
       Obegan = (OlsHandle != NULL);
     }
     return Obegan;
@@ -154,25 +156,55 @@ bool Olson2POSIX::gotOlsonFromWeb(){
 
 // Does the function to retrieve the Olson from the web (on a task).
 void Olson2POSIX::OlsonGet(void * parameter){
-int I = 0;
-String S, payload;
+int itmp = 0;
+int tmp = 0;
+int len = 0;
+int cnt = 0;
+size_t size = 0;
+uint8_t buff[128] = {0};
+WiFiClient *netstream;
+String stmp, payload;
 bool Good = (WiFi.status() == WL_CONNECTED);
 bool Sent = false;
 unsigned long Stay = millis() + 1000;
 vTaskDelay(5/portTICK_PERIOD_MS);
     while (Good && millis() < Stay){
         if (Obegan){
-            if (!Sent) { Sent = true; oHTTP.setConnectTimeout(3000); Stay = millis() + 3500; oHTTP.begin(oWiFiC, TZURL); } // Call it and leave.
-            else I = oHTTP.GET();
-            if (I == HTTP_CODE_OK) {
-                payload = oHTTP.getString();
+            if (!Sent) { Sent = true; oHTTP.setConnectTimeout(3000); Stay = millis() + 3500; Good = oHTTP.begin(oWiFiC, TZURL); } // Call it and leave.
+            else itmp = oHTTP.GET();
+            if (itmp == HTTP_CODE_OK) {
+                payload = "";
+                len = oHTTP.getSize();
+                netstream = oHTTP.getStreamPtr();
+                while (oHTTP.connected() && Good && (len > 0 || len == -1) && millis() < Stay) {
+                    size = netstream->available();
+                    if (size) {
+                        cnt = netstream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+                        if (cnt){
+                            payload += String((const char*)buff).substring(0,cnt);
+                            Stay += 250;
+                        }
+                        if (len == -1) {
+                            Good = !(size > 0 && !(size - cnt));
+                        } else if (len > 0) {
+                            len -= cnt;
+                        }
+                    }
+                    vTaskDelay(10/portTICK_PERIOD_MS);    // 10ms pauses.
+                }
+                if (len == -1) {
+                  cnt = payload.indexOf("\x0a");
+                  if (cnt && cnt + 1 < payload.length()) {
+                      payload = payload.substring(cnt + 1);
+                  }
+                }
                 JSONVar root = JSON.parse(payload);
-                S = JSON.stringify(root["timezone"]);
-                S.replace('"',' ');
-                S.trim();
-                OlsonFromWeb = S;
+                stmp = JSON.stringify(root["timezone"]);
+                stmp.replace('"',' ');
+                stmp.trim();
+                OlsonFromWeb = stmp;
                 Good = false;
-            }else if (I && Sent) { WebError = I; Good = false; } // Hit a web error.
+            }else if (itmp && Sent) { WebError = itmp; Good = false; } // Hit a web error.
         }
         if (Good) vTaskDelay(100/portTICK_PERIOD_MS);    // 100ms pauses.
     }
