@@ -1,11 +1,12 @@
 #include "Olson2POSIX.h"
 
 /* Olson2POSIX by GuruSR (https://www.github.com/GuruSR/Olson2POSIX)
- * Version 1.0, January  2, 2022
- * Version 1.1, January 12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
- * Version 1.2, March   28, 2023 - Converted to a threaded system for main thread performance.
- * Version 1.3, January 12, 2024 - Added WebError and methods to get the last HTTP error.
- * Version 1.4, July    17, 2024 - Migrated away from getString to improve task performance.
+ * Version 1.0, January   2, 2022
+ * Version 1.1, January  12, 2022 - Fix issues with TZ strings with quoted <+-nn> names
+ * Version 1.2, March    28, 2023 - Converted to a threaded system for main thread performance.
+ * Version 1.3, January  12, 2024 - Added WebError and methods to get the last HTTP error.
+ * Version 1.4, July     17, 2024 - Migrated away from getString to improve task performance.
+ * Version 1.5, December  5, 2024 - Migrated from Arduino_JSON to ArduinoJson.
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -138,7 +139,7 @@ bool Olson2POSIX::beginOlsonFromWeb(WiFiClient &client){
     ODone = false;
     if (OlsHandle == NULL) {
       WebError = 0;
-      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",3072,NULL,(configMAX_PRIORITIES - 2),&OlsHandle);
+      OlsRet = xTaskCreate(Olson2POSIX::OlsonGet,"Olson2POSIX_Get",3072,NULL,(tskIDLE_PRIORITY + 1),&OlsHandle);
       Obegan = (OlsHandle != NULL);
     }
     return Obegan;
@@ -165,6 +166,7 @@ uint8_t buff[128] = {0};
 WiFiClient *netstream;
 String stmp, payload;
 bool Good = (WiFi.status() == WL_CONNECTED);
+JsonDocument root;
 bool Sent = false;
 unsigned long Stay = millis() + 1000;
 vTaskDelay(5/portTICK_PERIOD_MS);
@@ -198,11 +200,12 @@ vTaskDelay(5/portTICK_PERIOD_MS);
                       payload = payload.substring(cnt + 1);
                   }
                 }
-                JSONVar root = JSON.parse(payload);
-                stmp = JSON.stringify(root["timezone"]);
+			if (!deserializeJson(root, payload)){
+                stmp = root["timezone"].as<String>();
                 stmp.replace('"',' ');
                 stmp.trim();
-                OlsonFromWeb = stmp;
+	                OlsonFromWeb = stmp;
+			}
                 Good = false;
             }else if (itmp && Sent) { WebError = itmp; Good = false; } // Hit a web error.
         }
