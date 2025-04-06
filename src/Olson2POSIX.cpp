@@ -1,3 +1,4 @@
+
 #include "Olson2POSIX.h"
 
 /* Olson2POSIX by GuruSR (https://www.github.com/GuruSR/Olson2POSIX)
@@ -7,6 +8,7 @@
  * Version 1.3, January  12, 2024 - Added WebError and methods to get the last HTTP error.
  * Version 1.4, July     17, 2024 - Migrated away from getString to improve task performance.
  * Version 1.5, December  5, 2024 - Migrated from Arduino_JSON to ArduinoJson.
+ * Version 1.6, April     6, 2025 - Fix mistake on WiFi pointer usage.
  *
  * This library offers the ability to convert from Olson to POSIX timezones as well as it will store the
  * Olson and POSIX in RTC memory to survive Deep Sleep.
@@ -46,7 +48,7 @@ RTC_DATA_ATTR BaseType_t OlsRet;
 RTC_DATA_ATTR bool ODone;
 bool Obegan;
 volatile int WebError;
-WiFiClient oWiFiC = NULL;
+WiFiClient oWiFiC;
 HTTPClient oHTTP;              // Tz
 
 // Data from:  https://github.com/pgurenko/tzinfo
